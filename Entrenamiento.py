@@ -1,28 +1,29 @@
-#--------------------
-import os
 
 #---------------------------------Importamos las fotos tomadas-----------------------------
-import tensorflow.keras.optimizers
+import tensorflow as tf
 
 #------------------------------ Crear modelo y entrenarlo ---------------------------------------
 from tensorflow.keras.preprocessing.image import ImageDataGenerator  #Nos ayuda a preprocesar las imagenes que le entreguemos al modelo
-# from tensorflow.python.keras import optimizers         #Optimizador con el que vamos a entrenar el modelo
 from tensorflow.python.keras.models import Sequential  #Nos permite hacer redes neuronales secuenciales
 from tensorflow.python.keras.layers import Dropout, Flatten, Dense, Activation #
 from tensorflow.python.keras.layers import Convolution2D, MaxPooling2D  #Capas para hacer las convoluciones
-from tensorflow.python.keras import backend as K       #Si hay una sesion de keras, lo cerramos para tener todo limpio
+from tensorflow.python.keras import backend as K        #Si hay una sesion de keras, lo cerramos para tener todo limpio
+# from tensorflow.keras.optimizers import Adam
+from tensorflow.python.keras.optimizer_v2.adam import Adam
 
-K.clear_session()  #Limpiamos todo
+
 
 datos_entrenamiento = 'C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/Deteccion-y-Clasificacion-de-Manos/Fotos/Entrenamiento'
 datos_validacion = 'C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/Deteccion-y-Clasificacion-de-Manos/Fotos/Validacion'
 
+
+
 #Parametros
-iteraciones = 20  #Numero de iteraciones para ajustar nuestro modelo
+iteraciones = 25  #Numero de iteraciones para ajustar nuestro modelo
 altura, longitud = 200, 200 #Tamaño de las imagenes de entrenamiento
 batch_size = 1  #Numero de imagenes que vamos a enviar
-pasos = 240/1  #Numero de veces que se va a procesar la informacion en cada iteracion
-pasos_validacion = 240/1 #Despues de cada iteracion, validamos lo anterior
+pasos = 350/1  #Numero de veces que se va a procesar la informacion en cada iteracion
+pasos_validacion = 350/1 #Despues de cada iteracion, validamos lo anterior
 filtrosconv1 = 32
 filtrosconv2 = 64     #Numero de filtros que vamos a aplicar en cada convolucion
 filtrosconv3 = 128     #Numero de filtros que vamos a aplicar en cada convolucion
@@ -80,12 +81,29 @@ cnn.add(Dense(clases, activation='softmax'))  #Es nuestra ultima capa, es la que
 
 #Agregamos parametros para optimizar el modelo
 #Durante el entrenamiento tenga una autoevalucion, que se optimice con Adam, y la metrica sera accuracy
-optimizar = tensorflow.keras.optimizers.Adam(learning_rate= lr)
+# optimizar  = Adam(learning_rate=lr)
 cnn.compile(loss = 'categorical_crossentropy', optimizer = 'adam', metrics = ['accuracy'])
 
-#Entrenaremos nuestra red
+# #Entrenaremos nuestra red
 cnn.fit(imagen_entreno, steps_per_epoch=pasos, epochs= iteraciones, validation_data= imagen_validacion, validation_steps=pasos_validacion)
 
 #Guardamos el modelo
 cnn.save('ModeloVocales.h5')
-cnn.save_weights('pesosVocales.h5')
+cnn.save_weights('pesosVocales.h5', save_format='h5')
+
+# Carga el modelo desde el archivo h5
+modelo = tf.keras.models.load_model('ModeloVocales.h5')
+K.clear_session()  #Limpiamos todo
+
+
+# Carga los pesos del modelo
+modelo.load_weights('pesosVocales.h5')
+
+# Convierte el modelo a TensorFlow Lite
+converter = tf.lite.TFLiteConverter.from_keras_model(modelo)
+tflite_model = converter.convert()
+
+with open('modelo_vocales.tflite', 'wb') as f:
+    f.write(tflite_model)
+
+

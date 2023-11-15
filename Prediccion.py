@@ -4,9 +4,16 @@ import os
 import numpy as np
 from keras_preprocessing.image import load_img, img_to_array
 from keras.models import load_model
+import flet as ft
+import time
+import SeguimientoManos as sm
 
-modelo = "C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/Deteccion-y-Clasificacion-de-Manos/ModeloVocales.h5"
-peso =  'C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/Deteccion-y-Clasificacion-de-Manos/pesosVocales.h5'
+
+
+
+
+modelo = "C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/TraductorLenguajeDeSenas/ModeloVocales.h5"
+peso =  'C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/TraductorLenguajeDeSenas/pesosVocales.h5'
 cnn = load_model(modelo)  #Cargamos el modelo
 cnn.load_weights(peso)  #Cargamos los pesos
 
@@ -51,10 +58,10 @@ while (1):
                 pto_i4 = posiciones[0] #5 Dedos: 0 | 0 Dedos: 0 | 1 Dedo: 0 | 2 Dedos: 0 | 3 Dedos: 0 | 4 Dedos: 0
                 pto_i5 = posiciones[9]
                 x1,y1 = (pto_i5[1]-80),(pto_i5[2]-80) #Obtenemos el punto incial y las longitudes
-                ancho, alto = (x1+100),(y1+100)
+                ancho, alto = (x1+80),(y1+80)
                 x2,y2 = x1 + ancho, y1 + alto
-                dedos_reg = copia[y1:y2, x1:x2]
-                dedos_reg = cv2.resize(dedos_reg, (200, 200), interpolation=cv2.INTER_CUBIC)  # Redimensionamos las fotos
+                dedos_regTest = copia[y1:y2, x1:x2]
+                dedos_reg = cv2.resize(dedos_regTest, (200, 200), interpolation=cv2.INTER_CUBIC)  # Redimensionamos las fotos
                 x = img_to_array(dedos_reg)  # Convertimos la imagen a una matriz
                 x = np.expand_dims(x, axis=0)  # Agregamos nuevo eje
                 vector = cnn.predict(x)  # Va a ser un arreglo de 2 dimensiones, donde va a poner 1 en la clase que crea correcta
@@ -68,6 +75,10 @@ while (1):
                     print(resultado)
                     cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
                     cv2.putText(frame, '{}'.format(dire_img[1]), (x1, y1 - 5), 1, 1.3, (0, 0, 255), 1, cv2.LINE_AA)
+                elif respuesta == 2:
+                    print(resultado)
+                # cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 0, 255), 3)
+                    cv2.putText(frame, '{}'.format(dire_img[2]), (x1, y1 - 5), 1, 1.3, (0, 255, 255), 1, cv2.LINE_AA)
                 else: 
                     cv2.putText(frame, 'Letra Desconocida', (x1, y1 - 5), 1, 1.3, (0, 255, 255), 1, cv2.LINE_AA)
 
@@ -76,8 +87,18 @@ while (1):
     k = cv2.waitKey(1)
     if k == 27:
         break
-cap.release()
-cv2.destroyAllWindows()
+
+
+# def main (page: ft.Page):
+#     page.update()
+    
+#     txt_Hellow_world = ft.Text(value="HelloWorld");
+#     page.add(section)
+
+# if(__name__== '__main__'):
+#     ft.app(target=main)
+#     cap.release()
+#     cv2.destroyAllWindows()
 
 
 

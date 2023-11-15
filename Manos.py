@@ -1,71 +1,54 @@
 import cv2
-import mediapipe as mp
 import os
+import SeguimientoManos as sm
 
-#----------------------------- Creamos la carpeta donde almacenaremos el entrenamiento ---------------------------------
-nombre = 'Letra_B'
+nombre = 'Letra_C'
 direccion = 'C:/Users/Joaquin Varela/Documents/TraductorDeImagenes/Deteccion-y-Clasificacion-de-Manos/Fotos/Validacion'
 carpeta = direccion + '/' + nombre
-if not os.path.exists(carpeta):
-    print('Carpeta creada: ',carpeta)
-    os.makedirs(carpeta)
 
-#Asignamos un contador para el nombre de la fotos
+if not os.path.exists(carpeta):
+    print('carpeta creada:', carpeta)
+    os.mkdir(carpeta)
+
+# Lectura de la camara
+cap = cv2.VideoCapture(0)
+cap.set(3,1280)
+cap.set(4,720)
+
 cont = 0
 
-#Leemos la camara
-cap = cv2.VideoCapture(0)
+detector= sm.detectormanos(Confdeteccion=0.9)
 
-#----------------------------Creamos un obejto que va almacenar la deteccion y el seguimiento de las manos------------
-clase_manos  =  mp.solutions.hands
-manos = clase_manos.Hands() #Primer parametro, FALSE para que no haga la deteccion 24/7
-                            #Solo hara deteccion cuando hay una confianza alta
-                            #Segundo parametro: numero maximo de manos
-                            #Tercer parametro: confianza minima de deteccion
-                            #Cuarto parametro: confianza minima de seguimiento
+while True:
+    ret,frame = cap.read()
 
-#----------------------------------Metodo para dibujar las manos---------------------------
-dibujo = mp.solutions.drawing_utils #Con este metodo dibujamos 21 puntos criticos de la mano
+    frame = detector.encontrarmanos(frame, dibujar=False)
 
+    lista1,bbox,mano = detector.encontrarposicion(frame,ManoNum=0, dibujarPuntos= False, dibujarBox= False, color=[0,255,0])
 
-while (1):
-        ret,frame = cap.read()
-        color = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        copia = frame.copy()
-        resultado = manos.process(color)
-        posiciones = []  # En esta lista vamos a almacenar las coordenadas de los puntos
-        #print(resultado.multi_hand_landmarks) #Si queremos ver si existe la deteccion
+    if mano == 1:
+        xmin,ymin, xmax,ymax =bbox
 
-        if resultado.multi_hand_landmarks: #Si hay algo en los resultados entramos al if
-            for mano in resultado.multi_hand_landmarks:  #Buscamos la mano dentro de la lista de manos que nos da el descriptor
-                for id, lm in enumerate(mano.landmark):  #Vamos a obtener la informacion de cada mano encontrada por el ID
-                    #print(id,lm) #Como nos entregan decimales (Proporcion de la imagen) debemos pasarlo a pixeles
-                    alto, ancho, c = frame.shape  #Extraemos el ancho y el alto de los fotpgramas para multiplicarlos por la proporcion
-                    corx, cory = int(lm.x*ancho), int(lm.y*alto) #Extraemos la ubicacion de cada punto que pertence a la mano en coordenadas
-                    posiciones.append([id,corx,cory])
-                    dibujo.draw_landmarks(frame, mano, clase_manos.HAND_CONNECTIONS)
-                if len(posiciones) != 0:
-                    pto_i1 = posiciones[4] #5 Dedos: 4 | 0 Dedos: 3 | 1 Dedo: 2 | 2 Dedos: 3 | 3 Dedos: 4 | 4 Dedos: 8
-                    pto_i2 = posiciones[20]#5 Dedos: 20| 0 Dedos: 17| 1 Dedo: 17| 2 Dedos: 20| 3 Dedos: 20| 4 Dedos: 20
-                    pto_i3 = posiciones[12]#5 Dedos: 12| 0 Dedos: 10 | 1 Dedo: 20|2 Dedos: 16| 3 Dedos: 12| 4 Dedos: 12
-                    pto_i4 = posiciones[0] #5 Dedos: 0 | 0 Dedos: 0 | 1 Dedo: 0 | 2 Dedos: 0 | 3 Dedos: 0 | 4 Dedos: 0
-                    pto_i5 = posiciones[9] #Punto central
-                    x1,y1 = (pto_i5[1]-100),(pto_i5[2]-100) #Obtenemos el punto incial y las longitudes
-                    ancho, alto = (x1+200),(y1+200)
-                    x2,y2 = x1 + ancho, y1 + alto
-                    dedos_reg = copia[y1:y2, x1:x2]
-                    cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 3)
-                    dedos_reg = cv2.resize(dedos_reg,(200,200), interpolation = cv2.INTER_CUBIC) #Redimensionamos las fotos
-                    cv2.imwrite(carpeta + "/Dedos_{}.jpg".format(cont),dedos_reg)
-                    cont = cont + 1
+        xmin=xmin-40
+        ymin=ymin-40
+        xmax=xmax+40
+        ymax=ymax+40
 
+        recorte = frame[ymin:ymax, xmin:xmax]
 
-                            
+        recorte= cv2.resize(recorte, (200,200), interpolation =cv2.INTER_CUBIC)
 
+        cv2.imwrite(carpeta + "/C_{}.jpg".format(cont), recorte)
+        cont = cont + 1
 
-        cv2.imshow("Video",frame)
-        k = cv2.waitKey(1)
-        if k == 27 or cont >= 300:
-            break
+        # cv2.rectangle(frame,(xmin, ymin ), (xmax, ymax ), [0,255,0],2)
+
+    cv2.imshow('LENGUAJE DE VOCALES', frame)
+    t=cv2.waitKey(1)
+    if t==27 or cont==350:
+        break
+        
 cap.release()
 cv2.destroyAllWindows()
+
+    
